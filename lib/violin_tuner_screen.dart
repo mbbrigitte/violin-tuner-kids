@@ -152,150 +152,214 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    
     return Scaffold(
-      backgroundColor: const Color(0xFF87CEEB), // Sky blue
-      appBar: AppBar(
-        title: const Text(
-          '🎻 Violin Tuner 🎻',
-          style: TextStyle(fontSize: 26),
-        ),
-        backgroundColor: const Color(0xFF4B0082), // Indigo
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
+      backgroundColor: Colors.white,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Fullscreen responsive sloth image in background
+          SizedBox(
+            width: screenWidth,
+            height: screenHeight,
+            child: Image.asset(
+              "assets/sloth_tuner_picture.webp",
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  color: const Color(0xFF87CEEB),
+                );
+              },
+            ),
+          ),
+          
+          // Semi-transparent overlay
+          Container(
+            color: Colors.black.withOpacity(0.2),
+          ),
+          
+          // Content overlay
+          SafeArea(
             child: Column(
               children: [
+                // "Play one string" at top
+                Padding(
+                  padding: EdgeInsets.all(screenHeight * 0.025),
+                  child: Text(
+                    'Play one string',
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.07,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      shadows: const [
+                        Shadow(
+                          blurRadius: 10.0,
+                          color: Colors.black,
+                          offset: Offset(2, 2),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                
+                SizedBox(height: screenHeight * 0.02),
+                
+                // Error message if any
                 if (hasError)
                   Container(
+                    margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
                     padding: const EdgeInsets.all(12),
-                    color: Colors.red,
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                     child: const Text(
                       'Audio system failed - Restart app',
                       style: TextStyle(color: Colors.white),
                     ),
                   ),
-                const SizedBox(height: 20),
-                Text(
-                  currentString.isNotEmpty
-                      ? 'String: $currentString'
-                      : 'Waiting...',
-                  style: const TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF4B0082),
-                    fontFamily: 'Georgia',
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  currentPitch > 0
-                      ? '${currentPitch.toStringAsFixed(1)} Hz'
-                      : '-- Hz',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    color: Color(0xFF4B0082),
-                  ),
-                ),
-                const SizedBox(height: 40),
+                
+                const Spacer(),
+                
+                // Hat indicator (sloth with moving hat)
                 _buildHatIndicator(),
-                const SizedBox(height: 40),
-                SizedBox(
-                  height: 36,
-                  child: Opacity(
-                    opacity: isInTune ? 1.0 : 0.0,
-                    child: const Text(
-                      'In tune! 🎉',
+                
+                const Spacer(),
+                
+                // String detection and tuning info
+                if (currentString.isNotEmpty)
+                  Container(
+                    margin: EdgeInsets.all(screenWidth * 0.05),
+                    padding: EdgeInsets.all(screenWidth * 0.05),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        // "You are tuning your X string"
+                        Text(
+                          'You are tuning your $currentString string',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.055,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF4B0082),
+                          ),
+                        ),
+                        
+                        SizedBox(height: screenHeight * 0.01),
+                        
+                        // Hz display
+                        Text(
+                          currentPitch > 0
+                              ? '${currentPitch.toStringAsFixed(1)} Hz'
+                              : '-- Hz',
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.045,
+                            color: const Color(0xFF4B0082),
+                          ),
+                        ),
+                        
+                        SizedBox(height: screenHeight * 0.02),
+                        
+                        // In tune message
+                        SizedBox(
+                          height: 36,
+                          child: Opacity(
+                            opacity: isInTune ? 1.0 : 0.0,
+                            child: Text(
+                              'In tune! 🎉',
+                              style: TextStyle(
+                                fontSize: screenWidth * 0.07,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF32CD32),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  // Discrete "Waiting for sound..." without white background
+                  Padding(
+                    padding: EdgeInsets.all(screenWidth * 0.05),
+                    child: Text(
+                      'Waiting for sound...',
+                      textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF32CD32),
+                        fontSize: screenWidth * 0.045,
+                        color: Colors.white.withOpacity(0.6),
+                        shadows: const [
+                          Shadow(
+                            blurRadius: 5.0,
+                            color: Colors.black,
+                            offset: Offset(1, 1),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 30),
-                if (!hasError && currentAmplitude < 0.005)
-                  const Column(
-                    children: [
-                      CircularProgressIndicator(
-                        color: Color(0xFF4B0082),
-                      ),
-                      SizedBox(height: 10),
-                      Text(
-                        'Ready to detect violin...',
-                        style: TextStyle(color: Color(0xFF4B0082)),
-                      ),
-                    ],
                   ),
               ],
             ),
           ),
-        ),
+        ],
       ),
     );
   }
   
   Widget _buildHatIndicator() {
     double normalized = (detuneAmount + 50) / 100;
-    double verticalDrop = isInTune ? 25 : 0;
+    double verticalDrop = isInTune ? 40 : 0; // Increased drop for bigger hat
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final double maxWidth = constraints.maxWidth;
-        final double slothHeight = maxWidth * 0.6;
-        final double hatSize = maxWidth * 0.2;
-        final double hatX = 20 + normalized * (maxWidth - 40 - hatSize);
+        // Get screen width for responsive sizing
+        final screenWidth = MediaQuery.of(context).size.width;
+        final screenHeight = MediaQuery.of(context).size.height;
+        
+        // Make hat responsive to screen size - 200% bigger than before
+        final double hatSize = screenWidth * 0.4; // Was 0.2, now doubled
+        final double trackWidth = screenWidth * 0.8; // Area for hat to move
+        final double hatX = (screenWidth - trackWidth) / 2 + normalized * (trackWidth - hatSize);
 
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: maxWidth,
-              height: slothHeight,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Positioned.fill(
-                    child: Image.asset(
-                      "assets/sloth_tuner_picture.webp",
-                      width: maxWidth,
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: Colors.grey[300],
-                          child: const Center(
-                            child: Icon(Icons.pets, size: 100, color: Colors.grey),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-
-                  AnimatedPositioned(
-                    duration: const Duration(milliseconds: 150),
-                    curve: Curves.easeOut,
-                    top: verticalDrop - 30,
-                    left: hatX,
-                    child: Image.asset(
-                      "assets/Hat.webp",
-                      width: hatSize,
-                      height: hatSize,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Icon(
-                          Icons.star,
-                          size: hatSize,
-                          color: Colors.yellow,
-                        );
-                      },
-                    ),
-                  ),
-                ],
+        return SizedBox(
+          width: screenWidth,
+          height: screenHeight * 0.25, // Responsive height
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 150),
+                curve: Curves.easeOut,
+                top: verticalDrop - 200, // Position higher (was -30, now +10)
+                left: hatX,
+                child: Image.asset(
+                  "assets/Hat.webp",
+                  width: hatSize,
+                  height: hatSize,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(
+                      Icons.star,
+                      size: hatSize,
+                      color: Colors.yellow,
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );

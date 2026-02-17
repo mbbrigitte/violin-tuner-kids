@@ -23,15 +23,40 @@ class ViolinTunerApp extends StatelessWidget {
   }
 }
 
-class WelcomeScreen extends StatelessWidget {
+class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
+
+  @override
+  State<WelcomeScreen> createState() => _WelcomeScreenState();
+}
+
+class _WelcomeScreenState extends State<WelcomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _checkPermissionAndNavigate();
+  }
+
+  Future<void> _checkPermissionAndNavigate() async {
+    // Check if microphone permission is already granted
+    PermissionStatus status = await Permission.microphone.status;
+    
+    if (status.isGranted && mounted) {
+      // Permission already granted, go directly to tuner
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const ViolinTunerScreen()),
+      );
+    }
+    // If not granted, stay on welcome screen
+  }
 
   Future<void> _requestMicrophoneAndNavigate(BuildContext context) async {
     PermissionStatus status = await Permission.microphone.status;
     
     if (status.isGranted) {
       if (context.mounted) {
-        Navigator.push(
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const ViolinTunerScreen()),
         );
@@ -92,7 +117,7 @@ class WelcomeScreen extends StatelessWidget {
     if (!context.mounted) return;
     
     if (status.isGranted) {
-      Navigator.push(
+      Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const ViolinTunerScreen()),
       );
@@ -178,76 +203,66 @@ class WelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final double w = size.width;
-    final double h = size.height;
-
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    
     return Scaffold(
-      backgroundColor: const Color(0xFF87CEEB), // Sky blue
-      body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: EdgeInsets.all(w * 0.08),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Title
-                Text(
-                  '🎻 Violin Tuner 🎻',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: w * 0.09,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF4B0082),
-                  ),
-                ),
-                
-                SizedBox(height: h * 0.05),
-
-                // Image
-                Container(
-                  constraints: BoxConstraints.loose(Size(w * 0.7, h * 0.4)),
-                  child: Image.asset(
-                    'assets/sloth_tuner_picture.webp',
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Icon(
+      body: GestureDetector(
+        onTap: () => _requestMicrophoneAndNavigate(context),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Fullscreen responsive sloth image
+            SizedBox(
+              width: screenWidth,
+              height: screenHeight,
+              child: Image.asset(
+                'assets/sloth_tuner_picture.webp',
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: const Color(0xFF87CEEB),
+                    child: Center(
+                      child: Icon(
                         Icons.music_note,
-                        size: w * 0.3,
+                        size: screenWidth * 0.3,
                         color: const Color(0xFF4B0082),
-                      );
-                    },
-                  ),
-                ),
-
-                SizedBox(height: h * 0.05),
-
-                // Start button
-                SizedBox(
-                  width: w * 0.7,
-                  child: ElevatedButton(
-                    onPressed: () => _requestMicrophoneAndNavigate(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF32CD32), // Lime green
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(vertical: h * 0.025),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(50),
-                      ),
-                      elevation: 8,
-                    ),
-                    child: Text(
-                      'Start Tuning!',
-                      style: TextStyle(
-                        fontSize: w * 0.07,
-                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                ),
-              ],
+                  );
+                },
+              ),
             ),
-          ),
+            
+            // Semi-transparent overlay with text
+            Container(
+              color: Colors.black.withOpacity(0.3),
+              child: Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: screenWidth * 0.1,
+                    vertical: screenHeight * 0.05,
+                  ),
+                  child: Text(
+                    'To start tuning, allow microphone access',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.07,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      shadows: const [
+                        Shadow(
+                          blurRadius: 10.0,
+                          color: Colors.black,
+                          offset: Offset(2, 2),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
