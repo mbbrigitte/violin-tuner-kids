@@ -154,7 +154,7 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    
+
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -162,8 +162,8 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              const Color(0xFF6DD5B0), // Mint green
-              const Color(0xFF4CAF93), // Deeper green
+              const Color(0xFF6DD5B0),
+              const Color(0xFF4CAF93),
             ],
           ),
         ),
@@ -190,8 +190,6 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen> {
                         ],
                       ),
                     ),
-                    
-                    // Only show tuning info when detecting
                     if (currentString.isNotEmpty)
                       Padding(
                         padding: EdgeInsets.only(top: screenHeight * 0.008),
@@ -215,8 +213,8 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen> {
                   ],
                 ),
               ),
-              
-              // Error message if any
+
+              // Error message
               if (hasError)
                 Container(
                   margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
@@ -230,33 +228,37 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen> {
                     style: TextStyle(color: Colors.white),
                   ),
                 ),
-              
-              // Middle section: Sloths and hat (takes most space)
+
+              // Middle section: Sloths and hat (responsive)
               Expanded(
-                child: Stack(
-                  children: [
-                    // Hat positioned behind sloths
-                    _buildHatIndicator(),
-                    
-                    // Full-width sloth image
-                    Positioned.fill(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 0), // Full width
-                        child: Image.asset(
-                          "assets/sloth_tuner_picture.webp",
-                          fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) {
-                            return const Center(
-                              child: Icon(Icons.pets, size: 100, color: Colors.white),
-                            );
-                          },
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return Stack(
+                      children: [
+                        // Sloth image
+                        Positioned(
+                          top: constraints.maxHeight * 0.4, // 20% from top
+                          left: 0,
+                          right: 0,
+                          child: Image.asset(
+                            "assets/sloth_tuner_picture.webp",
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Center(
+                                child: Icon(Icons.pets, size: 100, color: Colors.white),
+                              );
+                            },
+                          ),
                         ),
-                      ),
-                    ),
-                  ],
+
+                        // Hat
+                        _buildHatIndicator(constraints),
+                      ],
+                    );
+                  },
                 ),
               ),
-              
+
               // Bottom section: In tune message
               SizedBox(
                 height: screenHeight * 0.12,
@@ -288,40 +290,34 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen> {
       ),
     );
   }
-  
-  Widget _buildHatIndicator() {
+
+  Widget _buildHatIndicator(BoxConstraints constraints) {
     double normalized = (detuneAmount + 50) / 100;
     double verticalDrop = isInTune ? 60 : 0;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final screenWidth = MediaQuery.of(context).size.width;
-        
-        // Hat sizing and positioning
-        final double hatSize = screenWidth * 0.5;
-        final double trackWidth = screenWidth * 0.7;
-        final double hatX = (screenWidth - trackWidth) / 2 + normalized * (trackWidth - hatSize);
+    final screenWidth = constraints.maxWidth;
+    final hatSize = screenWidth * 0.5;
+    final trackWidth = screenWidth * 0.7;
+    final hatX = (screenWidth - trackWidth) / 2 + normalized * (trackWidth - hatSize);
 
-        return AnimatedPositioned(
-          duration: const Duration(milliseconds: 150),
-          curve: Curves.easeOut,
-          top: constraints.maxHeight * 0.35 + verticalDrop, // Position in middle of sloth area
-          left: hatX,
-          child: Image.asset(
-            "assets/Hat.webp",
-            width: hatSize,
-            height: hatSize,
-            fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) {
-              return Icon(
-                Icons.star,
-                size: hatSize,
-                color: Colors.yellow,
-              );
-            },
-          ),
-        );
-      },
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 150),
+      curve: Curves.easeOut,
+      top: constraints.maxHeight * 0.15 + verticalDrop, // relative to sloth
+      left: hatX,
+      child: Image.asset(
+        "assets/Hat.webp",
+        width: hatSize,
+        height: hatSize,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) {
+          return Icon(
+            Icons.star,
+            size: hatSize,
+            color: Colors.yellow,
+          );
+        },
+      ),
     );
   }
 }
