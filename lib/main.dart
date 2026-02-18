@@ -207,44 +207,29 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     final screenHeight = MediaQuery.of(context).size.height;
     
     return Scaffold(
-      body: GestureDetector(
-        onTap: () => _requestMicrophoneAndNavigate(context),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // Fullscreen responsive sloth image
-            SizedBox(
-              width: screenWidth,
-              height: screenHeight,
-              child: Image.asset(
-                'assets/sloth_tuner_picture.webp',
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: const Color(0xFF87CEEB),
-                    child: Center(
-                      child: Icon(
-                        Icons.music_note,
-                        size: screenWidth * 0.3,
-                        color: const Color(0xFF4B0082),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            
-            // Semi-transparent overlay with text
-            Container(
-              color: Colors.black.withOpacity(0.3),
-              child: Center(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: screenWidth * 0.1,
-                    vertical: screenHeight * 0.05,
-                  ),
-                  child: Text(
-                    'To start tuning, allow microphone access',
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFF6DD5B0), // Mint green
+              const Color(0xFF4CAF93), // Deeper green
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.1),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Spacer(flex: 2),
+                  
+                  // Message
+                  Text(
+                    'To start tuning, please allow microphone access',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: screenWidth * 0.07,
@@ -253,16 +238,44 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       shadows: const [
                         Shadow(
                           blurRadius: 10.0,
-                          color: Colors.black,
+                          color: Colors.black26,
                           offset: Offset(2, 2),
                         ),
                       ],
                     ),
                   ),
-                ),
+                  
+                  SizedBox(height: screenHeight * 0.1),
+                  
+                  // Allow button
+                  ElevatedButton(
+                    onPressed: () => _requestMicrophoneAndNavigate(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: const Color(0xFF4CAF93),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: screenWidth * 0.15,
+                        vertical: screenHeight * 0.025,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      elevation: 8,
+                    ),
+                    child: Text(
+                      'Allow',
+                      style: TextStyle(
+                        fontSize: screenWidth * 0.06,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  
+                  const Spacer(flex: 3),
+                ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
