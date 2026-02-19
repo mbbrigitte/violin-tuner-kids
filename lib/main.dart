@@ -38,22 +38,21 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   }
 
   Future<void> _checkPermissionAndNavigate() async {
-    // Check if microphone permission is already granted
     PermissionStatus status = await Permission.microphone.status;
-    
+
     if (status.isGranted && mounted) {
-      // Permission already granted, go directly to tuner
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const ViolinTunerScreen()),
       );
     }
-    // If not granted, stay on welcome screen
   }
 
+  /// Tapping Allow goes straight to the system permission dialog (or settings
+  /// if permanently denied). No extra in-app popup needed.
   Future<void> _requestMicrophoneAndNavigate(BuildContext context) async {
     PermissionStatus status = await Permission.microphone.status;
-    
+
     if (status.isGranted) {
       if (context.mounted) {
         Navigator.pushReplacement(
@@ -63,103 +62,63 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       }
       return;
     }
-    
-    if (context.mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          backgroundColor: Colors.lightBlue[300],
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: const BorderSide(color: Colors.white, width: 3),
-          ),
-          content: const Text(
-            'The tuner needs your microphone to hear your violin!',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(color: Colors.white, fontSize: 16),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.pop(context);
-                await _handleMicrophonePermission(context);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green[600],
-                foregroundColor: Colors.white,
-              ),
-              child: const Text(
-                'OK',
-                style: TextStyle(fontSize: 16),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-  }
 
-  Future<void> _handleMicrophonePermission(BuildContext context) async {
-    PermissionStatus status = await Permission.microphone.request();
-    
+    if (status.isPermanentlyDenied) {
+      // System won't show a dialog — send them to settings.
+      if (context.mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: Colors.red[400],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: const BorderSide(color: Colors.white, width: 3),
+            ),
+            title: const Text(
+              'Settings Required',
+              style:
+                  TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+            content: const Text(
+              'Please enable microphone access in your device settings.',
+              style: TextStyle(color: Colors.white),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel',
+                    style: TextStyle(color: Colors.white)),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  await openAppSettings();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.red[400],
+                ),
+                child: const Text('Open Settings'),
+              ),
+            ],
+          ),
+        );
+      }
+      return;
+    }
+
+    // Show the system permission dialog directly — no in-app pre-prompt.
+    status = await Permission.microphone.request();
+
     if (!context.mounted) return;
-    
+
     if (status.isGranted) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const ViolinTunerScreen()),
       );
-    } else if (status.isDenied) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          backgroundColor: Colors.orange[400],
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: const BorderSide(color: Colors.white, width: 3),
-          ),
-          title: const Text(
-            'Microphone Needed',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-          ),
-          content: const Text(
-            'The violin tuner needs microphone access to work. Please allow it!',
-            style: TextStyle(color: Colors.white),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.pop(context);
-                await _handleMicrophonePermission(context);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green[600],
-              ),
-              child: const Text('Try Again'),
-            ),
-          ],
-        ),
-      );
     } else if (status.isPermanentlyDenied) {
+      // Became permanently denied after the request.
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -173,16 +132,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
           content: const Text(
-            'Please enable microphone in your device settings.',
+            'Please enable microphone access in your device settings.',
             style: TextStyle(color: Colors.white),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(color: Colors.white),
-              ),
+              child:
+                  const Text('Cancel', style: TextStyle(color: Colors.white)),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -199,35 +156,38 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         ),
       );
     }
+    // If status.isDenied the user simply tapped "Don't Allow" — stay on screen,
+    // they can tap Allow again.
   }
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    
+
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
+        // ── Same gradient as the tuner screen ──────────────────────────────
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              const Color(0xFF6DD5B0), // Mint green
-              const Color(0xFF4CAF93), // Deeper green
+              Color(0xFF6DD5B0),
+              Color(0xFF4CAF93),
             ],
           ),
         ),
         child: SafeArea(
           child: Center(
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.1),
+              padding:
+                  EdgeInsets.symmetric(horizontal: screenWidth * 0.1),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Spacer(flex: 2),
-                  
-                  // Message
+
                   Text(
                     'To start tuning, please allow microphone access',
                     textAlign: TextAlign.center,
@@ -244,12 +204,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       ],
                     ),
                   ),
-                  
+
                   SizedBox(height: screenHeight * 0.1),
-                  
-                  // Allow button
+
                   ElevatedButton(
-                    onPressed: () => _requestMicrophoneAndNavigate(context),
+                    onPressed: () =>
+                        _requestMicrophoneAndNavigate(context),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       foregroundColor: const Color(0xFF4CAF93),
@@ -270,7 +230,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       ),
                     ),
                   ),
-                  
+
                   const Spacer(flex: 3),
                 ],
               ),

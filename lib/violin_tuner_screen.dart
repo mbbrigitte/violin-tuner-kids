@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:just_audio/just_audio.dart';
 import 'dart:async';
 import 'dart:math';
 
@@ -10,7 +11,8 @@ class ViolinTunerScreen extends StatefulWidget {
   State<ViolinTunerScreen> createState() => _ViolinTunerScreenState();
 }
 
-class _ViolinTunerScreenState extends State<ViolinTunerScreen> {
+class _ViolinTunerScreenState extends State<ViolinTunerScreen>
+    with TickerProviderStateMixin {
   static const platform = MethodChannel('com.violin_tuner_kids.tuner/audio');
 
   static const Map<String, double> violinStrings = {
@@ -31,10 +33,19 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen> {
 
   List<double> pitchBuffer = [];
   Timer? pitchTimer;
+  late AnimationController needleController;
+
+  // Reference tone playback
+  String? playingReferenceString;
+  final AudioPlayer _audioPlayer = AudioPlayer();
 
   @override
   void initState() {
     super.initState();
+    needleController = AnimationController(
+      duration: const Duration(milliseconds: 100),
+      vsync: this,
+    );
     _startRealTuning();
   }
 
@@ -48,7 +59,6 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen> {
 
     try {
       await platform.invokeMethod('startListening');
-      print('✅ Native audio started successfully');
 
       pitchTimer = Timer.periodic(const Duration(milliseconds: 50), (_) async {
         if (!mounted) return;
@@ -72,7 +82,7 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen> {
         }
       });
     } catch (e) {
-      print('❌ Error starting native audio: $e');
+      print('Error starting native audio: $e');
       _showPermanentError();
     }
   }
@@ -122,6 +132,11 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen> {
     isInTune = detuneAmount.abs() < 5;
     isTooHigh = detuneAmount > 5;
     isTooLow = detuneAmount < -5;
+
+    needleController.animateTo(
+      (detuneAmount + 50) / 100,
+      duration: const Duration(milliseconds: 100),
+    );
   }
 
   double _getHalfDistanceToNextString(String stringName) {
@@ -132,6 +147,28 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen> {
     double current = violinStrings[stringName]!;
     double next = violinStrings[order[index + 1]]!;
     return (next - current) / 2;
+  }
+
+  Future<void> _playReferenceString(String stringName) async {
+    // Don't allow tapping while already playing
+    if (playingReferenceString != null) return;
+    setState(() => playingReferenceString = stringName);
+    try {
+      await _audioPlayer.stop();
+      await _audioPlayer.setAsset('assets/violin_$stringName.mp3');
+      await _audioPlayer.play();
+      // Wait for playback to finish (or up to 5 seconds)
+      await _audioPlayer.playerStateStream
+          .firstWhere((s) => s.processingState == ProcessingState.completed)
+          .timeout(const Duration(seconds: 5), onTimeout: () {
+        _audioPlayer.stop();
+        return _audioPlayer.playerState;
+      });
+    } catch (e) {
+      print('Error playing reference tone: $e');
+    } finally {
+      if (mounted) setState(() => playingReferenceString = null);
+    }
   }
 
   Future<void> _stopAudio() async {
@@ -147,6 +184,8 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen> {
   @override
   void dispose() {
     _stopAudio();
+    needleController.dispose();
+    _audioPlayer.dispose();
     super.dispose();
   }
 
@@ -157,64 +196,43 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen> {
 
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              const Color(0xFF6DD5B0),
-              const Color(0xFF4CAF93),
+              Color(0xFF6DD5B0),
+              Color(0xFF4CAF93),
             ],
           ),
         ),
         child: SafeArea(
           child: Column(
             children: [
-              // Top section: Title and tuning info
+              // ── Top label: String name ──────────────────────────────────
               Padding(
-                padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
-                child: Column(
-                  children: [
-                    Text(
-                      'Play one string',
-                      style: TextStyle(
-                        fontSize: screenWidth * 0.08,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        shadows: const [
-                          Shadow(
-                            blurRadius: 10.0,
-                            color: Colors.black26,
-                            offset: Offset(2, 2),
-                          ),
-                        ],
+                padding: EdgeInsets.only(
+                    top: screenHeight * 0.02, bottom: screenHeight * 0.005),
+                child: Text(
+                  currentString.isNotEmpty
+                      ? 'String: $currentString'
+                      : 'Play one string',
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.09,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    shadows: const [
+                      Shadow(
+                        blurRadius: 10.0,
+                        color: Colors.black26,
+                        offset: Offset(2, 2),
                       ),
-                    ),
-                    if (currentString.isNotEmpty)
-                      Padding(
-                        padding: EdgeInsets.only(top: screenHeight * 0.008),
-                        child: Text(
-                          'Tuning $currentString, ${currentPitch.toStringAsFixed(1)} Hz',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: screenWidth * 0.045,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white.withOpacity(0.9),
-                            shadows: const [
-                              Shadow(
-                                blurRadius: 5.0,
-                                color: Colors.black26,
-                                offset: Offset(1, 1),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
 
-              // Error message
+              // ── Error banner ────────────────────────────────────────────
               if (hasError)
                 Container(
                   margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
@@ -224,34 +242,57 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Text(
-                    'Audio system failed - Restart app',
+                    'Audio system failed – Restart app',
                     style: TextStyle(color: Colors.white),
                   ),
                 ),
 
-              // Middle section: Sloths and hat (responsive)
+              // ── Needle gauge ────────────────────────────────────────────
+              Padding(
+                padding: EdgeInsets.only(
+                    left: screenWidth * 0.1,
+                    right: screenWidth * 0.1,
+                    top: screenHeight * 0.09,    // push gauge much lower
+                    bottom: screenHeight * 0.01),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final double gaugeSize = constraints.maxWidth;
+                    return SizedBox(
+                      width: gaugeSize,
+                      height: gaugeSize * 0.5,
+                      child: _buildNeedleGauge(gaugeSize),
+                    );
+                  },
+                ),
+              ),
+
+              // ── Sloth + hat ─────────────────────────────────────────────
               Expanded(
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     return Stack(
+                      clipBehavior: Clip.none,
                       children: [
-                        // Sloth image
+                        // Sloth image – edge-to-edge, anchored to bottom
                         Positioned(
-                          top: constraints.maxHeight * 0.4, // 20% from top
-                          left: 0,
-                          right: 0,
+                          top: constraints.maxHeight * 0.05, // show full sloth incl head
+                          left: -screenWidth * 0.05,        // bleed off sides
+                          right: -screenWidth * 0.05,
+                          bottom: 0,
                           child: Image.asset(
                             "assets/sloth_tuner_picture.webp",
-                            fit: BoxFit.contain,
+                            fit: BoxFit.cover,
+                            alignment: Alignment.bottomCenter,
                             errorBuilder: (context, error, stackTrace) {
                               return const Center(
-                                child: Icon(Icons.pets, size: 100, color: Colors.white),
+                                child: Icon(Icons.pets,
+                                    size: 100, color: Colors.white),
                               );
                             },
                           ),
                         ),
 
-                        // Hat
+                        // Hat – positioned above sloth, moves across full width
                         _buildHatIndicator(constraints),
                       ],
                     );
@@ -259,9 +300,9 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen> {
                 ),
               ),
 
-              // Bottom section: In tune message
+              // ── "In tune!" message ──────────────────────────────────────
               SizedBox(
-                height: screenHeight * 0.12,
+                height: screenHeight * 0.08,
                 child: Center(
                   child: AnimatedOpacity(
                     opacity: isInTune ? 1.0 : 0.0,
@@ -284,6 +325,60 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen> {
                   ),
                 ),
               ),
+
+              // ── Reference tone buttons ──────────────────────────────────
+              Padding(
+                padding: EdgeInsets.only(
+                    left: screenWidth * 0.06,
+                    right: screenWidth * 0.06,
+                    bottom: screenHeight * 0.025),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: ['G', 'D', 'A', 'E'].map((s) {
+                    final bool isPlaying = playingReferenceString == s;
+                    final double btnSize = screenWidth * 0.11;
+                    return GestureDetector(
+                      onTap: () => _playReferenceString(s),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: btnSize,
+                        height: btnSize,
+                        decoration: BoxDecoration(
+                          color: isPlaying
+                              ? Colors.white
+                              : Colors.white.withOpacity(0.25),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white,
+                            width: isPlaying ? 2.5 : 1.5,
+                          ),
+                          boxShadow: isPlaying
+                              ? [
+                                  BoxShadow(
+                                    color: Colors.white.withOpacity(0.5),
+                                    blurRadius: 8,
+                                    spreadRadius: 1,
+                                  )
+                                ]
+                              : [],
+                        ),
+                        child: Center(
+                          child: Text(
+                            s,
+                            style: TextStyle(
+                              fontSize: screenWidth * 0.045,
+                              fontWeight: FontWeight.bold,
+                              color: isPlaying
+                                  ? const Color(0xFF4CAF93)
+                                  : Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
             ],
           ),
         ),
@@ -291,19 +386,93 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen> {
     );
   }
 
-  Widget _buildHatIndicator(BoxConstraints constraints) {
-    double normalized = (detuneAmount + 50) / 100;
-    double verticalDrop = isInTune ? 60 : 0;
+  // ── Needle gauge (from violin_tuner.dart) ──────────────────────────────────
+  Widget _buildNeedleGauge(double size) {
+    final double centerPinSize = size * 0.07;
+    final double needleThickness = size * 0.018;
 
-    final screenWidth = constraints.maxWidth;
-    final hatSize = screenWidth * 0.5;
-    final trackWidth = screenWidth * 0.7;
-    final hatX = (screenWidth - trackWidth) / 2 + normalized * (trackWidth - hatSize);
+    return ClipPath(
+      clipper: HalfCircleClipper(),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.25),
+              shape: BoxShape.circle,
+              border: Border.all(
+                  color: Colors.white.withOpacity(0.5), width: size * 0.018),
+            ),
+            child: CustomPaint(
+              painter: GaugePainter(),
+            ),
+          ),
+
+          // Center reference line (green = in-tune target)
+          Container(
+            width: needleThickness,
+            height: size * 0.45,
+            decoration: BoxDecoration(
+              color: const Color.fromARGB(255, 117, 184, 9),
+              borderRadius: BorderRadius.circular(1),
+            ),
+          ),
+
+          // Rotating needle
+          AnimatedBuilder(
+            animation: needleController,
+            builder: (context, child) {
+              return Transform.rotate(
+                angle: (needleController.value - 0.5) * pi,
+                child: Container(
+                  width: needleThickness * 1.93,
+                  height: size * 0.45,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              );
+            },
+          ),
+
+          // Center pin
+          Container(
+            width: centerPinSize,
+            height: centerPinSize,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(
+                  color: Colors.white70, width: centerPinSize * 0.2),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Hat indicator with full-width movement ────────────────────────────────
+  Widget _buildHatIndicator(BoxConstraints constraints) {
+    // normalized goes 0.0 (far left) → 1.0 (far right) based on -50..+50 cents
+    double normalized = (detuneAmount + 50) / 100;
+    double verticalDrop = isInTune ? 50 : 0;
+
+    final double screenWidth = constraints.maxWidth;
+    // Hat takes 30% of screen width; it can travel from x=0 to x=(width - hatSize)
+    final double hatSize = screenWidth * 0.42;   // bigger hat
+    final double travelWidth = screenWidth - hatSize;
+    final double hatX = normalized * travelWidth;
+
+    // Hat floats above the sloth's head
+    final double hatTop = constraints.maxHeight * 0.0 + verticalDrop;
 
     return AnimatedPositioned(
       duration: const Duration(milliseconds: 150),
       curve: Curves.easeOut,
-      top: constraints.maxHeight * 0.15 + verticalDrop, // relative to sloth
+      top: hatTop,
       left: hatX,
       child: Image.asset(
         "assets/Hat.webp",
@@ -311,13 +480,78 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen> {
         height: hatSize,
         fit: BoxFit.contain,
         errorBuilder: (context, error, stackTrace) {
-          return Icon(
-            Icons.star,
-            size: hatSize,
-            color: Colors.yellow,
-          );
+          return Icon(Icons.star, size: hatSize, color: Colors.yellow);
         },
       ),
     );
   }
+}
+
+// ── Supporting painters / clippers ───────────────────────────────────────────
+
+class GaugePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.width * 0.012;
+
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2 - (size.width * 0.05);
+
+    // Green arc in the centre (in-tune zone)
+    paint.color = Colors.greenAccent.withOpacity(0.8);
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      pi + pi / 3,
+      pi / 3,
+      false,
+      paint,
+    );
+
+    // Top tick mark
+    final linePaint = Paint()
+      ..color = Colors.white70
+      ..strokeWidth = size.width * 0.01;
+    canvas.drawLine(
+      Offset(center.dx, center.dy - radius),
+      Offset(center.dx, center.dy - radius + (size.width * 0.05)),
+      linePaint,
+    );
+
+    // LOW / HIGH labels
+    final double fontSize = size.width * 0.06;
+    final textStyle = TextStyle(fontSize: fontSize, color: Colors.white70);
+
+    TextPainter(
+      text: TextSpan(text: 'LOW', style: textStyle),
+      textDirection: TextDirection.ltr,
+    )
+      ..layout()
+      ..paint(canvas,
+          Offset(center.dx - (size.width * 0.42), center.dy - (size.height * 0.32)));
+
+    TextPainter(
+      text: TextSpan(text: 'HIGH', style: textStyle),
+      textDirection: TextDirection.ltr,
+    )
+      ..layout()
+      ..paint(canvas,
+          Offset(center.dx + (size.width * 0.28), center.dy - (size.height * 0.32)));
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+class HalfCircleClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    path.addRect(Rect.fromLTWH(0, 0, size.width, size.height / 2));
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
