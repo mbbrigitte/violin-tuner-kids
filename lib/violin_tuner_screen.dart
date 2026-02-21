@@ -250,9 +250,9 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen>
               // ── Needle gauge ────────────────────────────────────────────
               Padding(
                 padding: EdgeInsets.only(
-                    left: screenWidth * 0.1,
-                    right: screenWidth * 0.1,
-                    top: screenHeight * 0.09,    // push gauge much lower
+                    left: screenWidth * 0.085,
+                    right: screenWidth * 0.085,
+                    top: screenHeight * 0.1,    // push gauge much lower
                     bottom: screenHeight * 0.01),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
@@ -276,12 +276,12 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen>
                         // Sloth image – edge-to-edge, anchored to bottom
                         Positioned(
                           top: constraints.maxHeight * 0.05, // show full sloth incl head
-                          left: -screenWidth * 0.05,        // bleed off sides
-                          right: -screenWidth * 0.05,
+                          left: -screenWidth * 0.01,       // bleed off sides
+                          right: -screenWidth * 0.01,
                           bottom: 0,
                           child: Image.asset(
                             "assets/sloth_tuner_picture.webp",
-                            fit: BoxFit.cover,
+                            fit: BoxFit.fitWidth,
                             alignment: Alignment.bottomCenter,
                             errorBuilder: (context, error, stackTrace) {
                               return const Center(
@@ -462,12 +462,12 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen>
 
     final double screenWidth = constraints.maxWidth;
     // Hat takes 30% of screen width; it can travel from x=0 to x=(width - hatSize)
-    final double hatSize = screenWidth * 0.42;   // bigger hat
+    final double hatSize = screenWidth * 0.52;   // bigger hat
     final double travelWidth = screenWidth - hatSize;
     final double hatX = normalized * travelWidth;
 
     // Hat floats above the sloth's head
-    final double hatTop = constraints.maxHeight * 0.0 + verticalDrop;
+    final double hatTop = constraints.maxHeight * -0.21 + verticalDrop;
 
     return AnimatedPositioned(
       duration: const Duration(milliseconds: 150),
