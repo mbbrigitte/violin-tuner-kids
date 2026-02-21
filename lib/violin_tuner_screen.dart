@@ -39,6 +39,14 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen>
   String? playingReferenceString;
   final AudioPlayer _audioPlayer = AudioPlayer();
 
+  // Map each string to its asset file (G and D are m4a, A and E are mp3)
+  static const Map<String, String> stringAssets = {
+    'G': 'assets/violin_G.m4a',
+    'D': 'assets/violin_D.m4a',
+    'A': 'assets/violin_A.mp3',
+    'E': 'assets/violin_E.mp3',
+  };
+
   @override
   void initState() {
     super.initState();
@@ -155,7 +163,7 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen>
     setState(() => playingReferenceString = stringName);
     try {
       await _audioPlayer.stop();
-      await _audioPlayer.setAsset('assets/violin_$stringName.mp3');
+      await _audioPlayer.setAsset(stringAssets[stringName]!);
       await _audioPlayer.play();
       // Wait for playback to finish (or up to 5 seconds)
       await _audioPlayer.playerStateStream
@@ -250,9 +258,9 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen>
               // ── Needle gauge ────────────────────────────────────────────
               Padding(
                 padding: EdgeInsets.only(
-                    left: screenWidth * 0.085,
-                    right: screenWidth * 0.085,
-                    top: screenHeight * 0.1,    // push gauge much lower
+                    left: screenWidth * 0.075,
+                    right: screenWidth * 0.075,
+                    top: screenHeight * 0.1,
                     bottom: screenHeight * 0.01),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
@@ -273,11 +281,14 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen>
                     return Stack(
                       clipBehavior: Clip.none,
                       children: [
-                        // Sloth image – edge-to-edge, anchored to bottom
+                        // Hat – drawn first so it sits UNDER the sloth
+                        _buildHatIndicator(constraints),
+
+                        // Sloth image – drawn on top so it covers the hat rim
                         Positioned(
-                          top: constraints.maxHeight * 0.05, // show full sloth incl head
-                          left: -screenWidth * 0.01,       // bleed off sides
-                          right: -screenWidth * 0.01,
+                          top: constraints.maxHeight * 0.05,
+                          left: 0,
+                          right: 0,
                           bottom: 0,
                           child: Image.asset(
                             "assets/sloth_tuner_picture.webp",
@@ -291,9 +302,6 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen>
                             },
                           ),
                         ),
-
-                        // Hat – positioned above sloth, moves across full width
-                        _buildHatIndicator(constraints),
                       ],
                     );
                   },
@@ -386,7 +394,7 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen>
     );
   }
 
-  // ── Needle gauge (from violin_tuner.dart) ──────────────────────────────────
+  // ── Needle gauge ──────────────────────────────────────────────────────────
   Widget _buildNeedleGauge(double size) {
     final double centerPinSize = size * 0.07;
     final double needleThickness = size * 0.018;
@@ -456,17 +464,14 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen>
 
   // ── Hat indicator with full-width movement ────────────────────────────────
   Widget _buildHatIndicator(BoxConstraints constraints) {
-    // normalized goes 0.0 (far left) → 1.0 (far right) based on -50..+50 cents
     double normalized = (detuneAmount + 50) / 100;
     double verticalDrop = isInTune ? 50 : 0;
 
     final double screenWidth = constraints.maxWidth;
-    // Hat takes 30% of screen width; it can travel from x=0 to x=(width - hatSize)
-    final double hatSize = screenWidth * 0.52;   // bigger hat
+    final double hatSize = screenWidth * 0.52;
     final double travelWidth = screenWidth - hatSize;
     final double hatX = normalized * travelWidth;
 
-    // Hat floats above the sloth's head
     final double hatTop = constraints.maxHeight * -0.21 + verticalDrop;
 
     return AnimatedPositioned(
