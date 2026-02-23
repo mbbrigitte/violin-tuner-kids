@@ -209,8 +209,8 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen>
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Color(0xFF6DD5B0),
-              Color(0xFF4CAF93),
+              Color.fromARGB(255, 86, 94, 14),
+              Color.fromARGB(255, 146, 207, 47),
             ],
           ),
         ),
@@ -472,7 +472,7 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen>
     final double travelWidth = screenWidth - hatSize;
     final double hatX = normalized * travelWidth;
 
-    final double hatTop = constraints.maxHeight * -0.21 + verticalDrop;
+    final double hatTop = constraints.maxHeight * -0.1 + verticalDrop;
 
     return AnimatedPositioned(
       duration: const Duration(milliseconds: 150),

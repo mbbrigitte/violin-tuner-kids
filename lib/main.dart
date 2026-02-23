@@ -173,8 +173,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Color(0xFF6DD5B0),
-              Color(0xFF4CAF93),
+             Color.fromARGB(255, 86, 94, 14),
+              Color.fromARGB(255, 146, 207, 47),
             ],
           ),
         ),
