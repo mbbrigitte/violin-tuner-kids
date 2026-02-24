@@ -472,7 +472,7 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen>
     final double travelWidth = screenWidth - hatSize;
     final double hatX = normalized * travelWidth;
 
-    final double hatTop = constraints.maxHeight * -0.15 + verticalDrop;
+    final double hatTop = constraints.maxHeight * -0.17 + verticalDrop;
 
     return AnimatedPositioned(
       duration: const Duration(milliseconds: 150),
