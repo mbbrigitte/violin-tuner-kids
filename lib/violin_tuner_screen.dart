@@ -316,7 +316,7 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen>
                     opacity: isInTune ? 1.0 : 0.0,
                     duration: const Duration(milliseconds: 300),
                     child: Text(
-                      'In tune! 🎉',
+                      'In tune!,
                       style: TextStyle(
                         fontSize: screenWidth * 0.09,
                         fontWeight: FontWeight.bold,
@@ -472,7 +472,7 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen>
     final double travelWidth = screenWidth - hatSize;
     final double hatX = normalized * travelWidth;
 
-    final double hatTop = constraints.maxHeight * -0.17 + verticalDrop;
+    final double hatTop = constraints.maxHeight * -0.175 + verticalDrop;
 
     return AnimatedPositioned(
       duration: const Duration(milliseconds: 150),
