@@ -316,7 +316,7 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen>
                     opacity: isInTune ? 1.0 : 0.0,
                     duration: const Duration(milliseconds: 300),
                     child: Text(
-                      'In tune!,
+                      'In tune!',
                       style: TextStyle(
                         fontSize: screenWidth * 0.09,
                         fontWeight: FontWeight.bold,
