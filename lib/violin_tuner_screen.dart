@@ -306,9 +306,11 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen>
                     final double normalized = (detuneAmount + 50) / 100;
                     final double hatX = normalized * travelWidth;
 
-                    // Hat bottom edge sits at head level
+                    // Hat bottom edge sits at head level, but never above the
+                    // top of the Expanded area (which would overlap the gauge)
                     final double verticalDrop = isInTune ? 50 : 0;
-                    final double hatTop = headY - hatSize + verticalDrop;
+                    final double hatTop =
+                        (headY - hatSize + verticalDrop).clamp(0.0, availableHeight - hatSize);
 
                     return Stack(
                       clipBehavior: Clip.none,
