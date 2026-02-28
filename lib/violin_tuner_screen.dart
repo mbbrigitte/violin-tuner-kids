@@ -47,6 +47,9 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen>
     'E': 'assets/violin_E.mp3',
   };
 
+  // Sloth image is 832×540 px (landscape)
+  static const double slothAspectRatio = 832.0 / 540.0; // ≈ 1.541
+
   @override
   void initState() {
     super.initState();
@@ -158,14 +161,12 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen>
   }
 
   Future<void> _playReferenceString(String stringName) async {
-    // Don't allow tapping while already playing
     if (playingReferenceString != null) return;
     setState(() => playingReferenceString = stringName);
     try {
       await _audioPlayer.stop();
       await _audioPlayer.setAsset(stringAssets[stringName]!);
       await _audioPlayer.play();
-      // Wait for playback to finish (or up to 5 seconds)
       await _audioPlayer.playerStateStream
           .firstWhere((s) => s.processingState == ProcessingState.completed)
           .timeout(const Duration(seconds: 5), onTimeout: () {
@@ -278,22 +279,67 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen>
               Expanded(
                 child: LayoutBuilder(
                   builder: (context, constraints) {
+                    final double availableWidth = constraints.maxWidth;
+                    final double availableHeight = constraints.maxHeight;
+
+                    // The sloth image is 832×540 (landscape). Under BoxFit.contain
+                    // it will always be constrained by WIDTH (since it's wider than
+                    // tall), so rendered height = width / aspectRatio.
+                    final double renderedWidth = availableWidth;
+                    final double renderedHeight = availableWidth / slothAspectRatio;
+
+                    // Sloth sits at the bottom, full width
+                    const double slothLeft = 0.0;
+                    final double slothTop = availableHeight - renderedHeight;
+
+                    // ── Hat anchored to sloth's head ─────────────────────
+                    // slothHeadFraction: how far from the TOP of the image
+                    // the sloth's head is. Since the image is landscape the
+                    // head is near the vertical centre of the image.
+                    // Tune this value if the hat sits too high or too low.
+                    const double slothHeadFraction = 0.25;
+                    final double headY =
+                        slothTop + renderedHeight * slothHeadFraction;
+
+                    final double hatSize = renderedWidth * 0.40;
+                    final double travelWidth = availableWidth - hatSize;
+                    final double normalized = (detuneAmount + 50) / 100;
+                    final double hatX = normalized * travelWidth;
+
+                    // Hat bottom edge sits at head level
+                    final double verticalDrop = isInTune ? 50 : 0;
+                    final double hatTop = headY - hatSize + verticalDrop;
+
                     return Stack(
                       clipBehavior: Clip.none,
                       children: [
                         // Hat – drawn first so it sits UNDER the sloth
-                        _buildHatIndicator(constraints),
+                        AnimatedPositioned(
+                          duration: const Duration(milliseconds: 150),
+                          curve: Curves.easeOut,
+                          top: hatTop,
+                          left: hatX,
+                          child: Image.asset(
+                            "assets/Hat.webp",
+                            width: hatSize,
+                            height: hatSize,
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Icon(Icons.star,
+                                  size: hatSize, color: Colors.yellow);
+                            },
+                          ),
+                        ),
 
-                        // Sloth image – drawn on top so it covers the hat rim
+                        // Sloth – drawn on top so its body covers the hat rim
                         Positioned(
-                          top: constraints.maxHeight * 0.05,
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
+                          left: slothLeft,
+                          top: slothTop,
+                          width: renderedWidth,
+                          height: renderedHeight,
                           child: Image.asset(
                             "assets/sloth_tuner_picture.webp",
-                            fit: BoxFit.fitWidth,
-                            alignment: Alignment.bottomCenter,
+                            fit: BoxFit.fill,
                             errorBuilder: (context, error, stackTrace) {
                               return const Center(
                                 child: Icon(Icons.pets,
@@ -458,35 +504,6 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen>
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  // ── Hat indicator with full-width movement ────────────────────────────────
-  Widget _buildHatIndicator(BoxConstraints constraints) {
-    double normalized = (detuneAmount + 50) / 100;
-    double verticalDrop = isInTune ? 50 : 0;
-
-    final double screenWidth = constraints.maxWidth;
-    final double hatSize = screenWidth * 0.52;
-    final double travelWidth = screenWidth - hatSize;
-    final double hatX = normalized * travelWidth;
-
-    final double hatTop = constraints.maxHeight * -0.175 + verticalDrop;
-
-    return AnimatedPositioned(
-      duration: const Duration(milliseconds: 150),
-      curve: Curves.easeOut,
-      top: hatTop,
-      left: hatX,
-      child: Image.asset(
-        "assets/Hat.webp",
-        width: hatSize,
-        height: hatSize,
-        fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) {
-          return Icon(Icons.star, size: hatSize, color: Colors.yellow);
-        },
       ),
     );
   }
