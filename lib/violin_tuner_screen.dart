@@ -293,24 +293,22 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen>
                     final double slothTop = availableHeight - renderedHeight;
 
                     // ── Hat anchored to sloth's head ─────────────────────
-                    // slothHeadFraction: how far from the TOP of the image
-                    // the sloth's head is. Since the image is landscape the
-                    // head is near the vertical centre of the image.
-                    // Tune this value if the hat sits too high or too low.
+                    // slothHeadFraction: how far from the TOP of the sloth
+                    // image the head sits (0.0 = very top, 1.0 = bottom).
                     const double slothHeadFraction = 0.15;
                     final double headY =
                         slothTop + renderedHeight * slothHeadFraction;
 
-                    final double hatSize = renderedWidth * 0.40;
+                    // Scale hat to rendered HEIGHT so it stays proportional
+                    // on both phone (tall Expanded) and tablet (short Expanded)
+                    final double hatSize = renderedHeight * 0.75;
                     final double travelWidth = availableWidth - hatSize;
                     final double normalized = (detuneAmount + 50) / 100;
                     final double hatX = normalized * travelWidth;
 
-                    // Hat bottom edge sits at head level, but never above the
-                    // top of the Expanded area (which would overlap the gauge)
+                    // Hat bottom edge sits at head level
                     final double verticalDrop = isInTune ? 50 : 0;
-                    final double hatTop =
-                        (headY - hatSize + verticalDrop).clamp(0.0, availableHeight - hatSize);
+                    final double hatTop = headY - hatSize + verticalDrop;
 
                     return Stack(
                       clipBehavior: Clip.none,
