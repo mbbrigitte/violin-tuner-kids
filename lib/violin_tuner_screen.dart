@@ -297,7 +297,7 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen>
                     // the sloth's head is. Since the image is landscape the
                     // head is near the vertical centre of the image.
                     // Tune this value if the hat sits too high or too low.
-                    const double slothHeadFraction = 0.25;
+                    const double slothHeadFraction = 0.15;
                     final double headY =
                         slothTop + renderedHeight * slothHeadFraction;
 
