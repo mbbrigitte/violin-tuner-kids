@@ -288,14 +288,15 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen>
                     final double renderedWidth = availableWidth;
                     final double renderedHeight = availableWidth / slothAspectRatio;
 
-                    // Sloth sits at the bottom, full width
+                    // Sloth sits near the bottom, nudged down a little
                     const double slothLeft = 0.0;
-                    final double slothTop = availableHeight - renderedHeight;
+                    final double slothTop =
+                        availableHeight - renderedHeight + renderedHeight * 0.1;
 
                     // ── Hat anchored to sloth's head ─────────────────────
                     // slothHeadFraction: how far from the TOP of the sloth
                     // image the head sits (0.0 = very top, 1.0 = bottom).
-                    const double slothHeadFraction = 0.15;
+                    const double slothHeadFraction = 0.24;
                     final double headY =
                         slothTop + renderedHeight * slothHeadFraction;
 
@@ -307,7 +308,7 @@ class _ViolinTunerScreenState extends State<ViolinTunerScreen>
                     final double hatX = normalized * travelWidth;
 
                     // Hat bottom edge sits at head level
-                    final double verticalDrop = isInTune ? 50 : 0;
+                    final double verticalDrop = isInTune ? 40 : 0;
                     final double hatTop = headY - hatSize + verticalDrop;
 
                     return Stack(
