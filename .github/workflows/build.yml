@@ -1,4 +1,4 @@
-name: Build APK
+name: Build APK and App Bundle
 
 on:
   push:
@@ -32,8 +32,17 @@ jobs:
     - name: Build APK
       run: flutter build apk --release
     
+    - name: Build App Bundle (.aab for Google Play)
+      run: flutter build appbundle --release
+    
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: violin-tuner-apk
         path: build/app/outputs/flutter-apk/app-release.apk
+    
+    - name: Upload App Bundle
+      uses: actions/upload-artifact@v4
+      with:
+        name: violin-tuner-aab
+        path: build/app/outputs/bundle/release/app-release.aab
