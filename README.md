@@ -1,16 +1,13 @@
 # violin_tuner_kids
 
-A new Flutter project.
+A beautiful violin tuner that is made especially easy and with cute visuals so that kids can and want to use it.
 
-## Getting Started
+Coded in the Dart language, using flutter. 
 
-This project is a starting point for a Flutter application.
+Pitch detection that currently works well in Android. The project also includes github actions to produce the apk and aab files needed to run it on Android or push to play store.
 
-A few resources to get you started if this is your first Flutter project:
+March 2026. 
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+This is my first flutter project!
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+
