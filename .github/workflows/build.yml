@@ -1,5 +1,4 @@
 name: Build APK and App Bundle
-
 on:
   push:
     branches: [ main ]
@@ -10,37 +9,47 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up Java
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: '17'
-    
+
     - name: Set up Flutter
       uses: subosito/flutter-action@v2
       with:
         flutter-version: '3.24.0'
         channel: 'stable'
-    
+
+    - name: Decode keystore
+      run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+
     - name: Install dependencies
       run: flutter pub get
-    
+
     - name: Build APK
       run: flutter build apk --release
-    
+      env:
+        KEY_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
+        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
     - name: Build App Bundle (.aab for Google Play)
       run: flutter build appbundle --release
-    
+      env:
+        KEY_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
+        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: violin-tuner-apk
         path: build/app/outputs/flutter-apk/app-release.apk
-    
+
     - name: Upload App Bundle
       uses: actions/upload-artifact@v4
       with:
