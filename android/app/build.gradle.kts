@@ -21,7 +21,7 @@ android {
     defaultConfig {
         applicationId = "com.violin_tuner_kids"
         minSdk = 21
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 35
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
