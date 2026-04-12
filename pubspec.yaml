@@ -2,7 +2,7 @@ name: violin_tuner_kids
 description: "A simple violin tuner for kids"
 publish_to: 'none'
 
-version: 1.0.1+0
+version: 1.0.1+4
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
