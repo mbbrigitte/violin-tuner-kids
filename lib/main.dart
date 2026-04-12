@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'violin_tuner_screen.dart';
+import 'review_helper.dart';
 
 void main() {
   runApp(const ViolinTunerApp());
@@ -34,6 +35,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   @override
   void initState() {
     super.initState();
+      ReviewHelper.incrementAndMaybeAskReview();   // ← add this line
     _checkPermissionAndNavigate();
   }
 
