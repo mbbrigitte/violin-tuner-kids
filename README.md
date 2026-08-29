@@ -1,4 +1,4 @@
-# violin_tuner_kids
+# violin tuner for kids
 
 A beautiful violin tuner that is made especially easy and with cute visuals so that kids can and want to use it.
 
@@ -8,6 +8,6 @@ Pitch detection that currently works well in Android. The project also includes 
 
 March 2026. 
 
-This is my first flutter project!
+This is my first flutter project! It received over 420 downloads so far. Get it on: https://play.google.com/store/apps/details?id=com.violin_tuner_kids
 
 
