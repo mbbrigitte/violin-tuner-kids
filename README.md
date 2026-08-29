@@ -1,4 +1,4 @@
-# violin tuner for kids
+# Violin tuner for kids
 
 A beautiful violin tuner that is made especially easy and with cute visuals so that kids can and want to use it.
 
